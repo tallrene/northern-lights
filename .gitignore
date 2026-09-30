@@ -1,0 +1,15 @@
+# personal incident material never enters this repo
+incidents/
+*.mp4
+*.mov
+*.jpg
+*.jpeg
+*.png
+*.pdf
+.env
+.env.*
+*.key
+*.token
+node_modules/
+__pycache__/
+.venv/
