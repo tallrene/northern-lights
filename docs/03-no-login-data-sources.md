@@ -182,3 +182,15 @@ key runs unattended with no further human action:
   pricing/field depth.
 
 No payment or signup has been started; this issue is research-only per its own scope.
+
+## Decision (René, 30 Sep 2026)
+
+René picked **Option A — Surepass** via the HOU-147 question card. Surepass is the provider to
+KYC with: he completes the one-time business sign-up/KYC on Surepass's own dashboard; once issued,
+the API key runs the RC/PUC/Challan lookups unattended, no further human login required.
+
+This issue's own scope stops at the recommendation — no signup, payment, or credential creation was
+performed as part of closing it. Next-step work (completing the Surepass KYC, getting the real
+per-call price and exact field list, wiring the API key into the pipeline) is a separate,
+follow-on task for whoever owns that step (René for the KYC/business sign-up; Root for the
+pipeline integration once a key exists).
