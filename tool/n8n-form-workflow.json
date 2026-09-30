@@ -1,0 +1,59 @@
+{
+  "name": "Northern Lights — Incident Pack Form (draft, not deployed)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Incident Pack",
+        "formDescription": "Plate, notes and photos only. Nothing here is sent anywhere automatically — submitting only writes local files for the incident-pack CLI to assemble into a PDF.",
+        "formFields": {
+          "values": [
+            { "fieldLabel": "Plate number", "fieldType": "text", "requiredField": true },
+            { "fieldLabel": "Date", "fieldType": "text", "placeholder": "YYYY-MM-DD" },
+            { "fieldLabel": "Time", "fieldType": "text", "placeholder": "HH:MM" },
+            { "fieldLabel": "Location", "fieldType": "text" },
+            { "fieldLabel": "Notes", "fieldType": "textarea", "requiredField": true },
+            { "fieldLabel": "Photos", "fieldType": "file", "multipleFiles": true, "acceptFileTypes": ".jpg,.jpeg,.png" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "form-trigger",
+      "name": "Incident Pack Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 0],
+      "webhookId": "REPLACE-ON-IMPORT"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Write uploaded photos to a local work dir and build the JSON payload\n// incident_pack.py --json expects: plate, date, time, location, notes, photos: [paths]\nconst fs = require('fs');\nconst path = require('path');\n\nconst workDir = $env.NORTHERN_LIGHTS_WORKDIR || '/tmp/northern-lights-submissions';\nconst submissionId = Date.now().toString();\nconst dir = path.join(workDir, submissionId);\nfs.mkdirSync(dir, { recursive: true });\n\nconst binaryKeys = Object.keys(items[0].binary || {});\nconst photoPaths = [];\nfor (const key of binaryKeys) {\n  const bin = items[0].binary[key];\n  const fname = bin.fileName || `${key}.jpg`;\n  const outPath = path.join(dir, fname);\n  fs.writeFileSync(outPath, Buffer.from(bin.data, 'base64'));\n  photoPaths.push(outPath);\n}\n\nconst payload = {\n  plate: $json['Plate number'] || '',\n  date: $json['Date'] || '',\n  time: $json['Time'] || '',\n  location: $json['Location'] || '',\n  notes: $json['Notes'] || '',\n  photos: photoPaths\n};\n\nconst jsonPath = path.join(dir, 'submission.json');\nfs.writeFileSync(jsonPath, JSON.stringify(payload, null, 2));\n\nreturn [{ json: { jsonPath, dir } }];"
+      },
+      "id": "write-submission",
+      "name": "Write submission JSON + photos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "command": "={{ $env.NORTHERN_LIGHTS_TOOL_DIR || '/absolute/path/to/northern-lights/tool' }}/.venv/bin/python3 {{ $env.NORTHERN_LIGHTS_TOOL_DIR || '/absolute/path/to/northern-lights/tool' }}/incident_pack.py --json {{ $json.jsonPath }} --out {{ $json.dir }}/incident-pack.pdf"
+      },
+      "id": "run-cli",
+      "name": "Generate PDF (Execute Command)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [520, 0]
+    }
+  ],
+  "connections": {
+    "Incident Pack Form": {
+      "main": [[{ "node": "Write submission JSON + photos", "type": "main", "index": 0 }]]
+    },
+    "Write submission JSON + photos": {
+      "main": [[{ "node": "Generate PDF (Execute Command)", "type": "main", "index": 0 }]]
+    }
+  },
+  "meta": {
+    "note": "Draft export, not imported/activated in any n8n instance. Adjust NORTHERN_LIGHTS_WORKDIR and NORTHERN_LIGHTS_TOOL_DIR env vars to your environment before importing. This workflow makes no external API calls — it only writes local files and shells out to the local incident_pack.py CLI. The resulting PDF sits on disk for a human to pick up; nothing is emailed, posted, or sent to any third party."
+  }
+}
