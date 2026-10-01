@@ -13,3 +13,4 @@ incidents/
 node_modules/
 __pycache__/
 .venv/
+tool/__pycache__/
